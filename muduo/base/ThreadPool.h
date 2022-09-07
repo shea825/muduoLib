@@ -14,27 +14,28 @@
 #include <deque>
 #include <vector>
 
-namespace muduo
-{
+namespace muduo {
 
-class ThreadPool : noncopyable
-{
- public:
-  typedef std::function<void ()> Task;
+class ThreadPool : noncopyable {
+  /**
+   *
+   * 消费者<--线程队列
+   * 生产者-->任务队列
+   */
+public:
+  typedef std::function<void()> Task;
 
-  explicit ThreadPool(const string& nameArg = string("ThreadPool"));
+  explicit ThreadPool(const string &nameArg = string("ThreadPool"));
   ~ThreadPool();
 
   // Must be called before start().
   void setMaxQueueSize(int maxSize) { maxQueueSize_ = maxSize; }
-  void setThreadInitCallback(const Task& cb)
-  { threadInitCallback_ = cb; }
+  void setThreadInitCallback(const Task &cb) { threadInitCallback_ = cb; }
 
   void start(int numThreads);
   void stop();
 
-  const string& name() const
-  { return name_; }
+  const string &name() const { return name_; }
 
   size_t queueSize() const;
 
@@ -44,12 +45,19 @@ class ThreadPool : noncopyable
   // So we don't need to overload a const& and an && versions
   // as we do in (Bounded)BlockingQueue.
   // https://stackoverflow.com/a/25408989
+  /**
+   * 向任务队列添加任务
+   * @param f 任务
+   */
   void run(Task f);
 
- private:
+private:
   bool isFull() const REQUIRES(mutex_);
   void runInThread();
   Task take();
+  /**
+   * 获取任务
+   */
 
   mutable MutexLock mutex_;
   Condition notEmpty_ GUARDED_BY(mutex_);
@@ -62,6 +70,6 @@ class ThreadPool : noncopyable
   bool running_;
 };
 
-}  // namespace muduo
+} // namespace muduo
 
-#endif  // MUDUO_BASE_THREADPOOL_H
+#endif // MUDUO_BASE_THREADPOOL_H
