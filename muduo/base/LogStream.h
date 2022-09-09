@@ -163,7 +163,7 @@ class LogStream : noncopyable
   template<typename T>
   void formatInteger(T);
 
-  Buffer buffer_;
+  Buffer buffer_; //缓冲区
 
   static const int kMaxNumericSize = 48;
 };
