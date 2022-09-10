@@ -131,7 +131,7 @@ inline Logger::LogLevel Logger::logLevel() { return g_logLevel; }
 //     logWarnStream << "Bad news";
 //
 /**
- * @note 以下muduo::Logger()均为匿名对象
+ * @note 以下muduo::Logger()均为匿名临时对象    调用后立即析构
  */
 #define LOG_TRACE                                                              \
   if (muduo::Logger::logLevel() <= muduo::Logger::TRACE)                       \

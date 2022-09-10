@@ -5,11 +5,21 @@
 #include <unistd.h>
 
 std::unique_ptr<muduo::LogFile> g_logFile;
+FILE *g_file;
 
 void outputFunc(const char *msg, int len) { g_logFile->append(msg, len); }
 
+void outputFunc1(const char *msg, int len) {
+  if (g_file) {
+    fwrite(msg, 1, len, g_file);
+  }
+}
+
 void flushFunc() { g_logFile->flush(); }
 
+void flushFunc1() {
+  fflush(g_file);
+}
 
 int main(int argc, char *argv[]) {
 #if 0
@@ -28,9 +38,17 @@ int main(int argc, char *argv[]) {
     usleep(1000);
   }
 #else
-  FILE* g_file = ::fopen("/tmp/muduo_log", "ae");
-  muduo::Logger::setOutput([&](const char *msg, int len) {
-    fwrite(msg, 1, len, g_file);
-  });
+  g_file = ::fopen("/tmp/muduo_log", "ae");
+  muduo::Logger::setOutput(outputFunc1);
+  muduo::Logger::setFlush(flushFunc1);
+
+  LOG_TRACE << "trace";
+  LOG_DEBUG << "debug";
+  LOG_INFO << "info";
+  LOG_WARN << "warn";
+  LOG_ERROR << "error";
+
+  ::fclose(g_file);
 #endif
+  return EXIT_SUCCESS;
 }
