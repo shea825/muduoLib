@@ -66,6 +66,11 @@ class StringArg // copyable
   const char* str_;
 };
 
+/**
+ * @brief 用以实现 高效 字符串传递
+ * 既可用 const char* ，也可用 std::string 作为参数传递
+ * 且不涉及 内存拷贝
+ */
 class StringPiece {
  private:
   const char*   ptr_;
@@ -112,11 +117,17 @@ class StringPiece {
 
   char operator[](int i) const { return ptr_[i]; }
 
+  /**
+   * @brief 去除前缀
+   */
   void remove_prefix(int n) {
     ptr_ += n;
     length_ -= n;
   }
 
+  /**
+   * @brief 去除后缀
+   */
   void remove_suffix(int n) {
     length_ -= n;
   }
@@ -129,6 +140,11 @@ class StringPiece {
     return !(*this == x);
   }
 
+  /**
+   * @note auxcmp 是 辅助运算符
+   * e.g. STRINGPIECE_BINARY_PREDICATE(abcd, abcdefg)
+   * 如果只通过memcmp判断
+   */
 #define STRINGPIECE_BINARY_PREDICATE(cmp,auxcmp)                             \
   bool operator cmp (const StringPiece& x) const {                           \
     int r = memcmp(ptr_, x.ptr_, length_ < x.length_ ? length_ : x.length_); \
@@ -172,6 +188,15 @@ class StringPiece {
 //  cannot safely store a StringPiece into an STL container
 // ------------------------------------------------------------------
 
+/**
+ * @note 在 STL 当中 为了提供 通用的操作 而又不损失效率 通常用到 traits 编程技巧
+ * 具体来说 traits 就是通过定义一些结构体或类 并利用 模板特化 和 偏特化 的能力
+ * 给类型赋予一些特性 这些特性根据类型的不同而异
+ *
+ * 使用这些 traits 来判断一个ie类型的一些特性，引发c++的函数重载机制，特化处理提高效率
+ *
+ * 这里对 __type_traits 进行特化，给了 StringPiece 一些特性
+ */
 #ifdef HAVE_TYPE_TRAITS
 // This makes vector<StringPiece> really fast for some STL implementations
 template<> struct __type_traits<muduo::StringPiece> {

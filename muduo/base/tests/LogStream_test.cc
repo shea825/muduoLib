@@ -7,7 +7,10 @@
 #define BOOST_TEST_MAIN
 #define BOOST_TEST_DYN_LINK
 #include <boost/test/unit_test.hpp>
-
+/**
+ * @note 使用 boost单元测试框架
+ * sudo apt install libboost-test-dev
+ */
 using muduo::string;
 
 BOOST_AUTO_TEST_CASE(testLogStreamBooleans)

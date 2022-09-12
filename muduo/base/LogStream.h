@@ -143,6 +143,9 @@ private:
   static const int kMaxNumericSize = 48;
 };
 
+/**
+   * @brief 将 val 格式化 到 buf 当中
+   */
 class Fmt // : noncopyable
 {
 public:
@@ -152,7 +155,7 @@ public:
   int length() const { return length_; }
 
 private:
-  char buf_[32];
+  char buf_[32]{};
   int length_;
 };
 
