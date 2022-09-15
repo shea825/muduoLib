@@ -86,8 +86,11 @@ bool LogFile::rollFile() {
 string LogFile::getLogFileName(const string &basename, time_t *now) {
   string filename;
   filename.reserve(basename.size() + 64);
+
+  //文件名
   filename = basename;
 
+  //时间
   char timebuf[32];
   struct tm tm;
   *now = time(NULL);
@@ -95,8 +98,10 @@ string LogFile::getLogFileName(const string &basename, time_t *now) {
   strftime(timebuf, sizeof timebuf, ".%Y%m%d-%H%M%S.", &tm);
   filename += timebuf;
 
+  //主机名
   filename += ProcessInfo::hostname();
 
+  //进程id
   char pidbuf[32];
   snprintf(pidbuf, sizeof pidbuf, ".%d", ProcessInfo::pid());
   filename += pidbuf;

@@ -66,7 +66,7 @@ private:
   size_t write(const char *logline, size_t len);
 
   FILE *fp_;
-  char buffer_[64 * 1024];  //64k
+  char buffer_[64 * 1024]; // 64k
   off_t writtenBytes_;
 };
 
