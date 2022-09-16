@@ -13,6 +13,13 @@ namespace muduo {
 
 class GzipFile : noncopyable {
 public:
+  /**
+   * @note noexcept 告诉编译器 函数中不会发生异常 有助于编译器对程序做出更多优化
+   * 在以下情形鼓励使用 noexcept
+   * 移动构造函数（move constructor）
+   * 移动分配函数（move assignment）
+   * 析构函数   （destructor）
+   */
   GzipFile(GzipFile &&rhs) noexcept : file_(rhs.file_) { rhs.file_ = NULL; }
 
   ~GzipFile() {
@@ -42,6 +49,9 @@ public:
   }
 
   // number of uncompressed bytes
+  /**
+   * @note 当前文件解压后的位置
+   */
   off_t tell() const { return ::gztell(file_); }
 
 #if ZLIB_VERNUM >= 0x1240
@@ -54,11 +64,15 @@ public:
   static GzipFile openForRead(StringArg filename) {
     return GzipFile(::gzopen(filename.c_str(), "rbe"));
   }
-
+  /**
+   * @note "ab"表示每次写的时候追加
+   */
   static GzipFile openForAppend(StringArg filename) {
     return GzipFile(::gzopen(filename.c_str(), "abe"));
   }
-
+ /**
+  * @note “wb”每次写会覆盖之前的内容
+  */
   static GzipFile openForWriteExclusive(StringArg filename) {
     return GzipFile(::gzopen(filename.c_str(), "wbxe"));
   }
