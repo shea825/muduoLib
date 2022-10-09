@@ -1,0 +1,30 @@
+@startuml
+'https://plantuml.com/sequence-diagram
+actor user
+user -> Channel: enableReading()
+Channel -> Channel: update()
+Channel -> EventLoop: updateChannel()
+EventLoop -> Poller: updateChannel()
+@enduml
+
+@startuml
+actor user
+user -> EventLoop: loop()
+EventLoop -> Poller: poll()
+Poller -> Poller: fillActiveChannels()
+Poller --> EventLoop: activeChannels()
+EventLoop -> ChannelA: handleEvent()
+EventLoop -> ChannelB: handleEvent()
+EventLoop -> Poller: poll()
+@enduml
+
+@startuml
+actor user
+user -> EventLoop: loop()
+EventLoop -> Poller: poll()
+Poller -> EventLoop: activeChannels()
+EventLoop -> ChannelA: handleEvent()
+ChannelA -> TimerQueue: handleRead()
+TimerQueue -> TimerQueue: getExpired()
+TimerQueue -> user: onTimer()
+@enduml

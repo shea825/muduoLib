@@ -46,3 +46,5 @@ add_executable(timerqueue_unittest TimerQueue_unittest.cc)
 target_link_libraries(timerqueue_unittest muduo_net)
 add_test(NAME timerqueue_unittest COMMAND timerqueue_unittest)
 
+add_executable(eventloop_test EventLoop_test.cpp)
+target_link_libraries(eventloop_test muduo_net)

@@ -109,7 +109,7 @@ inline double timeDifference(Timestamp high, Timestamp low)
 
 ///
 /// Add @c seconds to given timestamp.
-///
+/// @note Timestamp用值传递是有意的，64位机中针对 int64_t 有优化 存放在 8字节寄存器当中，而不是堆栈
 /// @return timestamp+seconds as Timestamp
 ///
 inline Timestamp addTime(Timestamp timestamp, double seconds)

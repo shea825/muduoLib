@@ -19,68 +19,78 @@
 #include "muduo/net/Callbacks.h"
 #include "muduo/net/Channel.h"
 
-namespace muduo
-{
-namespace net
-{
+namespace muduo {
+    namespace net {
 
-class EventLoop;
-class Timer;
-class TimerId;
+        class EventLoop;
+
+        class Timer;
+
+        class TimerId;
 
 ///
 /// A best efforts timer queue.
 /// No guarantee that the callback will be on time.
 ///
-class TimerQueue : noncopyable
-{
- public:
-  explicit TimerQueue(EventLoop* loop);
-  ~TimerQueue();
+        class TimerQueue : noncopyable {
+        public:
+            explicit TimerQueue(EventLoop *loop);
 
-  ///
-  /// Schedules the callback to be run at given time,
-  /// repeats if @c interval > 0.0.
-  ///
-  /// Must be thread safe. Usually be called from other threads.
-  TimerId addTimer(TimerCallback cb,
-                   Timestamp when,
-                   double interval);
+            ~TimerQueue();
 
-  void cancel(TimerId timerId);
+            ///
+            /// Schedules the callback to be run at given time,
+            /// repeats if @c interval > 0.0.
+            ///
+            /// Must be thread safe. Usually be called from other threads.
+            /// 通常不在所属eventloop对象的线程当中调用
+            TimerId addTimer(TimerCallback cb,
+                             Timestamp when,
+                             double interval);
 
- private:
+            void cancel(TimerId timerId);
 
-  // FIXME: use unique_ptr<Timer> instead of raw pointers.
-  // This requires heterogeneous comparison lookup (N3465) from C++14
-  // so that we can find an T* in a set<unique_ptr<T>>.
-  typedef std::pair<Timestamp, Timer*> Entry;
-  typedef std::set<Entry> TimerList;
-  typedef std::pair<Timer*, int64_t> ActiveTimer;
-  typedef std::set<ActiveTimer> ActiveTimerSet;
+        private:
 
-  void addTimerInLoop(Timer* timer);
-  void cancelInLoop(TimerId timerId);
-  // called when timerfd alarms
-  void handleRead();
-  // move out all expired timers
-  std::vector<Entry> getExpired(Timestamp now);
-  void reset(const std::vector<Entry>& expired, Timestamp now);
+            // FIXME: use unique_ptr<Timer> instead of raw pointers.
+            // This requires heterogeneous comparison lookup (N3465) from C++14
+            // so that we can find an T* in a set<unique_ptr<T>>.
+            // TimerList和ActiveTimerSet保存相同的Timer列表，前者按到期时间排序，后者按对象地址排序
+            typedef std::pair<Timestamp, Timer *> Entry;
+            typedef std::set<Entry> TimerList;
+            typedef std::pair<Timer *, int64_t> ActiveTimer;
+            typedef std::set<ActiveTimer> ActiveTimerSet;
 
-  bool insert(Timer* timer);
+            //以下成员函数只可能在其所属的IO线程中调用，因而不必加锁
 
-  EventLoop* loop_;
-  const int timerfd_;
-  Channel timerfdChannel_;
-  // Timer list sorted by expiration
-  TimerList timers_;
+            void addTimerInLoop(Timer *timer);
 
-  // for cancel()
-  ActiveTimerSet activeTimers_;
-  bool callingExpiredTimers_; /* atomic */
-  ActiveTimerSet cancelingTimers_;
-};
+            void cancelInLoop(TimerId timerId);
 
-}  // namespace net
+            // called when timerfd alarms
+            void handleRead();
+
+            // move out all expired timers
+            // 返回超时的定时器列表
+            std::vector<Entry> getExpired(Timestamp now);
+
+            // 重置超时的定时器
+            void reset(const std::vector<Entry> &expired, Timestamp now);
+
+            bool insert(Timer *timer);
+
+            EventLoop *loop_;                       //所属eventloop
+            const int timerfd_;
+            Channel timerfdChannel_;
+            // Timer list sorted by expiration
+            TimerList timers_;
+
+            // for cancel()
+            ActiveTimerSet activeTimers_;
+            bool callingExpiredTimers_; /* atomic */
+            ActiveTimerSet cancelingTimers_;        //被取消的定时器
+        };
+
+    }  // namespace net
 }  // namespace muduo
 #endif  // MUDUO_NET_TIMERQUEUE_H

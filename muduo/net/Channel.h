@@ -59,11 +59,11 @@ class Channel : noncopyable
   // int revents() const { return revents_; }
   bool isNoneEvent() const { return events_ == kNoneEvent; }
 
-  void enableReading() { events_ |= kReadEvent; update(); }
+  void enableReading() { events_ |= kReadEvent; update(); }   //关注读
   void disableReading() { events_ &= ~kReadEvent; update(); }
   void enableWriting() { events_ |= kWriteEvent; update(); }
   void disableWriting() { events_ &= ~kWriteEvent; update(); }
-  void disableAll() { events_ = kNoneEvent; update(); }
+  void disableAll() { events_ = kNoneEvent; update(); }       //不关注
   bool isWriting() const { return events_ & kWriteEvent; }
   bool isReading() const { return events_ & kReadEvent; }
 
@@ -78,7 +78,7 @@ class Channel : noncopyable
   void doNotLogHup() { logHup_ = false; }
 
   EventLoop* ownerLoop() { return loop_; }
-  void remove();
+  void remove();  //调用之前确保 disableAll
 
  private:
   static string eventsToString(int fd, int ev);
@@ -90,12 +90,12 @@ class Channel : noncopyable
   static const int kReadEvent;
   static const int kWriteEvent;
 
-  EventLoop* loop_;
-  const int  fd_;
-  int        events_;
-  int        revents_; // it's the received event types of epoll or poll
-  int        index_; // used by Poller.
-  bool       logHup_;
+  EventLoop* loop_;                   //所属EventLoop
+  const int  fd_;                     //文件描述符，但不负责关闭
+  int        events_;                 //关注的事件
+  int        revents_;                //epoll 或者 poll 返回的事件
+  int        index_;                  //Poller使用 表示在poll的事件数组中的序号
+  bool       logHup_;                 //for POLLHUP
 
   std::weak_ptr<void> tie_;
   bool tied_;

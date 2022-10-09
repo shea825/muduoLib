@@ -55,14 +55,14 @@ class Poller : noncopyable
   void assertInLoopThread() const
   {
     ownerLoop_->assertInLoopThread();
-  }
+  } //断言拥有的Loop处于创建该EventLoop的线程当中
 
  protected:
   typedef std::map<int, Channel*> ChannelMap;
-  ChannelMap channels_;
+  ChannelMap channels_;     //key：文件描述符，value：通道指针
 
  private:
-  EventLoop* ownerLoop_;
+  EventLoop* ownerLoop_;    //poller 所属EventLoop
 };
 
 }  // namespace net

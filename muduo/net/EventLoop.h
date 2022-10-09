@@ -17,16 +17,14 @@
 
 #include <boost/any.hpp>
 
-#include "muduo/base/Mutex.h"
 #include "muduo/base/CurrentThread.h"
+#include "muduo/base/Mutex.h"
 #include "muduo/base/Timestamp.h"
 #include "muduo/net/Callbacks.h"
 #include "muduo/net/TimerId.h"
 
-namespace muduo
-{
-namespace net
-{
+namespace muduo {
+namespace net {
 
 class Channel;
 class Poller;
@@ -36,18 +34,17 @@ class TimerQueue;
 /// Reactor, at most one per thread.
 ///
 /// This is an interface class, so don't expose too much details.
-class EventLoop : noncopyable
-{
- public:
+class EventLoop : noncopyable {
+public:
   typedef std::function<void()> Functor;
 
   EventLoop();
-  ~EventLoop();  // force out-line dtor, for std::unique_ptr members.
+  ~EventLoop(); // force out-line dtor, for std::unique_ptr members.
 
   ///
   /// Loops forever.
   ///
-  /// Must be called in the same thread as creation of the object.
+  /// Must be called in the same thread as creation of the object.不能跨线程调用
   ///
   void loop();
 
@@ -101,49 +98,44 @@ class EventLoop : noncopyable
 
   // internal usage
   void wakeup();
-  void updateChannel(Channel* channel);
-  void removeChannel(Channel* channel);
-  bool hasChannel(Channel* channel);
+  void updateChannel(Channel *channel);   //在poller中注册或者更新通道
+  void removeChannel(Channel *channel);   //从poller中移除通道
+  bool hasChannel(Channel *channel);
 
-  // pid_t threadId() const { return threadId_; }
-  void assertInLoopThread()
-  {
-    if (!isInLoopThread())
-    {
+  pid_t threadId() const { return threadId_; }
+  void assertInLoopThread() {
+    if (!isInLoopThread()) {
       abortNotInLoopThread();
     }
-  }
+  }   //断言处于创建该EventLoop的线程当中
   bool isInLoopThread() const { return threadId_ == CurrentThread::tid(); }
   // bool callingPendingFunctors() const { return callingPendingFunctors_; }
   bool eventHandling() const { return eventHandling_; }
 
-  void setContext(const boost::any& context)
-  { context_ = context; }
+  void setContext(const boost::any &context) { context_ = context; }
 
-  const boost::any& getContext() const
-  { return context_; }
+  const boost::any &getContext() const { return context_; }
 
-  boost::any* getMutableContext()
-  { return &context_; }
+  boost::any *getMutableContext() { return &context_; }
 
-  static EventLoop* getEventLoopOfCurrentThread();
+  static EventLoop *getEventLoopOfCurrentThread();
 
- private:
+private:
   void abortNotInLoopThread();
-  void handleRead();  // waked up
+  void handleRead(); // waked up
   void doPendingFunctors();
 
   void printActiveChannels() const; // DEBUG
 
-  typedef std::vector<Channel*> ChannelList;
+  typedef std::vector<Channel *> ChannelList;
 
   bool looping_; /* atomic */
   std::atomic<bool> quit_;
-  bool eventHandling_; /* atomic */
+  bool eventHandling_;          /* atomic 当前是否处于事件处理的状态*/
   bool callingPendingFunctors_; /* atomic */
   int64_t iteration_;
-  const pid_t threadId_;
-  Timestamp pollReturnTime_;
+  const pid_t threadId_;        //当前对象所属线程Id
+  Timestamp pollReturnTime_;    //调用poll函数返回的时间戳
   std::unique_ptr<Poller> poller_;
   std::unique_ptr<TimerQueue> timerQueue_;
   int wakeupFd_;
@@ -153,14 +145,14 @@ class EventLoop : noncopyable
   boost::any context_;
 
   // scratch variables
-  ChannelList activeChannels_;
-  Channel* currentActiveChannel_;
+  ChannelList activeChannels_;    //poller返回的活动通道
+  Channel *currentActiveChannel_; //当前正在处理的活动通道
 
   mutable MutexLock mutex_;
   std::vector<Functor> pendingFunctors_ GUARDED_BY(mutex_);
 };
 
-}  // namespace net
-}  // namespace muduo
+} // namespace net
+} // namespace muduo
 
-#endif  // MUDUO_NET_EVENTLOOP_H
+#endif // MUDUO_NET_EVENTLOOP_H

@@ -26,7 +26,7 @@ using namespace muduo::net;
 
 namespace
 {
-__thread EventLoop* t_loopInThisThread = 0;
+__thread EventLoop* t_loopInThisThread = 0; //当前线程EventLoop对象指针，线程局部存储
 
 const int kPollTimeMs = 10000;
 
@@ -75,7 +75,7 @@ EventLoop::EventLoop()
     currentActiveChannel_(NULL)
 {
   LOG_DEBUG << "EventLoop created " << this << " in thread " << threadId_;
-  if (t_loopInThisThread)
+  if (t_loopInThisThread) //当前线程已经创建了EventLoop对象
   {
     LOG_FATAL << "Another EventLoop " << t_loopInThisThread
               << " exists in this thread " << threadId_;
@@ -103,15 +103,19 @@ EventLoop::~EventLoop()
 void EventLoop::loop()
 {
   assert(!looping_);
-  assertInLoopThread();
+  assertInLoopThread(); //断言处于创建该对象的线程当中
+  if (quit_) {
+    LOG_INFO << "EventLoop" << this << "already quit";
+    return;  //if quit return
+  }
   looping_ = true;
-  quit_ = false;  // FIXME: what if someone calls quit() before loop() ?
+  quit_ = false;  // FIXME(solved): what if someone calls quit() before loop() ?
   LOG_TRACE << "EventLoop " << this << " start looping";
 
   while (!quit_)
   {
     activeChannels_.clear();
-    pollReturnTime_ = poller_->poll(kPollTimeMs, &activeChannels_);
+    pollReturnTime_ = poller_->poll(kPollTimeMs, &activeChannels_); //返回活动通道
     ++iteration_;
     if (Logger::logLevel() <= Logger::TRACE)
     {
@@ -119,7 +123,7 @@ void EventLoop::loop()
     }
     // TODO sort channel by priority
     eventHandling_ = true;
-    for (Channel* channel : activeChannels_)
+    for (Channel* channel : activeChannels_)  //处理活动通道的事务
     {
       currentActiveChannel_ = channel;
       currentActiveChannel_->handleEvent(pollReturnTime_);
@@ -133,6 +137,7 @@ void EventLoop::loop()
   looping_ = false;
 }
 
+//该函数可跨线程调用
 void EventLoop::quit()
 {
   quit_ = true;
@@ -200,7 +205,7 @@ void EventLoop::cancel(TimerId timerId)
 
 void EventLoop::updateChannel(Channel* channel)
 {
-  assert(channel->ownerLoop() == this);
+  assert(channel->ownerLoop() == this); //断言调用该通道拥有的EventLoop为该Loop
   assertInLoopThread();
   poller_->updateChannel(channel);
 }

@@ -1,0 +1,74 @@
+@startuml
+'https://plantuml.com/class-diagram
+left to right direction
+
+class EventLoop {
++loop()
++updateChannel()
++removeChannel()
+}
+note top
+一个EventLoop包含多个Channel
+EventLoop不负责Channel生存期的控制
+end note
+
+class Channel {
+-fd_
+-readCallback_;
+-writeCallback_;
+-closeCallback_;
+-errorCallback_;
++handleEvent()
+}
+note top
+Selectable IO Channel
+负责注册与响应IO事件，但不拥有FileDescriptor
+是Acceptor、Connector、EventLoop、TimeQueue和TcpConnection的成员
+end note
+class Poller {
++poll()
++updateChannel()
++removeChannel()
+}
+
+class TcpConnection {
+-handleRead()
+-handleWrite()
+-handleClose()
+-handleError()
+}
+
+class Acceptor {
+-handleRead()
+}
+note top
+被动连接的抽象
+end note
+
+class Connector {
+-handleWrite()
+-handleError()
+}
+note top
+主动连接的抽象
+end note
+
+EventLoop *-- Poller
+EventLoop -- FileDescriptor
+Poller -- FileDescriptor
+Socket -- FileDescriptor : 拥有
+Socket --* TcpConnection
+FileDescriptor -- Channel
+Poller <|-- EPollPoller
+Poller <|-- PollPoller
+EventLoop "1" o-- "many" Channel
+TcpConnection *-- Channel
+Channel *-- Acceptor
+Channel *-- Connector
+TcpServer *-- Acceptor
+TcpClient *-- Connector
+TcpServer "1" o-- "many" TcpConnection
+TcpClient o-- TcpConnection
+
+
+@enduml

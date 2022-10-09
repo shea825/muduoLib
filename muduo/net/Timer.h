@@ -15,49 +15,46 @@
 #include "muduo/base/Timestamp.h"
 #include "muduo/net/Callbacks.h"
 
-namespace muduo
-{
-namespace net
-{
+namespace muduo {
+    namespace net {
 
 ///
 /// Internal class for timer event.
 ///
-class Timer : noncopyable
-{
- public:
-  Timer(TimerCallback cb, Timestamp when, double interval)
-    : callback_(std::move(cb)),
-      expiration_(when),
-      interval_(interval),
-      repeat_(interval > 0.0),
-      sequence_(s_numCreated_.incrementAndGet())
-  { }
+        class Timer : noncopyable {
+        public:
+            Timer(TimerCallback cb, Timestamp when, double interval)
+                    : callback_(std::move(cb)),
+                      expiration_(when),
+                      interval_(interval),
+                      repeat_(interval > 0.0),
+                      sequence_(s_numCreated_.incrementAndGet()) {}
 
-  void run() const
-  {
-    callback_();
-  }
+            void run() const {
+                callback_();
+            }
 
-  Timestamp expiration() const  { return expiration_; }
-  bool repeat() const { return repeat_; }
-  int64_t sequence() const { return sequence_; }
+            Timestamp expiration() const { return expiration_; }
 
-  void restart(Timestamp now);
+            bool repeat() const { return repeat_; }
 
-  static int64_t numCreated() { return s_numCreated_.get(); }
+            int64_t sequence() const { return sequence_; }
 
- private:
-  const TimerCallback callback_;
-  Timestamp expiration_;
-  const double interval_;
-  const bool repeat_;
-  const int64_t sequence_;
+            void restart(Timestamp now);
 
-  static AtomicInt64 s_numCreated_;
-};
+            static int64_t numCreated() { return s_numCreated_.get(); }
 
-}  // namespace net
+        private:
+            const TimerCallback callback_;          //定时器回调函数
+            Timestamp expiration_;                  //下一次的超时时刻
+            const double interval_;                 //超时时间间隔，如果是一次性定时器，该值为0
+            const bool repeat_;                     //是否重复
+            const int64_t sequence_;                //定时器计数，当前已经创建的定时器数量
+
+            static AtomicInt64 s_numCreated_;       //原子int，保证不同线程创建的sequence唯一
+        };
+
+    }  // namespace net
 }  // namespace muduo
 
 #endif  // MUDUO_NET_TIMER_H
