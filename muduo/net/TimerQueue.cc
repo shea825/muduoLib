@@ -25,7 +25,7 @@ namespace muduo {
         namespace detail {
 
             int createTimerfd() {
-                int timerfd = ::timerfd_create(CLOCK_MONOTONIC,   //不受不连续系统时间更改的影响
+                int timerfd = ::timerfd_create(CLOCK_MONOTONIC,   //不受不连续系统时间更改的影响,跟实际时间有关
                                                TFD_NONBLOCK | TFD_CLOEXEC);
                 if (timerfd < 0) {
                     LOG_SYSFATAL << "Failed in timerfd_create";
@@ -115,10 +115,10 @@ void TimerQueue::cancel(TimerId timerId) {
 
 void TimerQueue::addTimerInLoop(Timer *timer) {
     loop_->assertInLoopThread();
-    bool earliestChanged = insert(timer);
+    bool earliestChanged = insert(timer);               //插入一个定时器，可能会使最早到期的定时器发生改变
 
     if (earliestChanged) {
-        resetTimerfd(timerfd_, timer->expiration());
+        resetTimerfd(timerfd_, timer->expiration());    //重置定时器的超时时刻
     }
 }
 
@@ -204,7 +204,7 @@ void TimerQueue::reset(const std::vector<Entry> &expired, Timestamp now) {
 bool TimerQueue::insert(Timer *timer) {
     loop_->assertInLoopThread();
     assert(timers_.size() == activeTimers_.size());
-    bool earliestChanged = false;
+    bool earliestChanged = false;   //最早到期时间是否发生改变
     Timestamp when = timer->expiration();
     TimerList::iterator it = timers_.begin();
     if (it == timers_.end() || when < it->first) {

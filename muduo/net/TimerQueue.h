@@ -83,10 +83,10 @@ namespace muduo {
             const int timerfd_;
             Channel timerfdChannel_;
             // Timer list sorted by expiration
-            TimerList timers_;
+            TimerList timers_;                      //按到期时间排序
 
             // for cancel()
-            ActiveTimerSet activeTimers_;
+            ActiveTimerSet activeTimers_;           //按对象地址排序
             bool callingExpiredTimers_; /* atomic */
             ActiveTimerSet cancelingTimers_;        //被取消的定时器
         };

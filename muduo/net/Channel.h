@@ -68,7 +68,7 @@ class Channel : noncopyable
   bool isReading() const { return events_ & kReadEvent; }
 
   // for Poller
-  int index() { return index_; }
+  int index() const { return index_; }
   void set_index(int idx) { index_ = idx; }
 
   // for debug

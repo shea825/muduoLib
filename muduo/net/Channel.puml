@@ -23,6 +23,7 @@ actor user
 user -> EventLoop: loop()
 EventLoop -> Poller: poll()
 Poller -> EventLoop: activeChannels()
+note right: timeOut
 EventLoop -> ChannelA: handleEvent()
 ChannelA -> TimerQueue: handleRead()
 TimerQueue -> TimerQueue: getExpired()
