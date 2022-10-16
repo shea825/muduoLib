@@ -127,13 +127,13 @@ void TimerQueue::cancelInLoop(TimerId timerId) {
     assert(timers_.size() == activeTimers_.size());
     ActiveTimer timer(timerId.timer_, timerId.sequence_);
     ActiveTimerSet::iterator it = activeTimers_.find(timer);
-    if (it != activeTimers_.end()) {
+    if (it != activeTimers_.end()) {        //找到了定时器所对应的timerfd
         size_t n = timers_.erase(Entry(it->first->expiration(), it->first));
         assert(n == 1);
         (void) n;
         delete it->first; // FIXME: no delete please
         activeTimers_.erase(it);
-    } else if (callingExpiredTimers_) {
+    } else if (callingExpiredTimers_) {     //定义器已经到期
         cancelingTimers_.insert(timer);
     }
     assert(timers_.size() == activeTimers_.size());
@@ -142,19 +142,19 @@ void TimerQueue::cancelInLoop(TimerId timerId) {
 void TimerQueue::handleRead() {
     loop_->assertInLoopThread();
     Timestamp now(Timestamp::now());
-    readTimerfd(timerfd_, now);
+    readTimerfd(timerfd_, now);                     //清除该事件，避免一直触发
 
-    std::vector<Entry> expired = getExpired(now);
+    std::vector<Entry> expired = getExpired(now);   //获取该时刻之前所有的定时器列表
 
     callingExpiredTimers_ = true;
     cancelingTimers_.clear();
     // safe to callback outside critical section
     for (const Entry &it : expired) {
-        it.second->run();
+        it.second->run();                           //回调定时器处理函数
     }
     callingExpiredTimers_ = false;
 
-    reset(expired, now);
+    reset(expired, now);                            //不是一次性定时器，需要重启
 }
 
 std::vector<TimerQueue::Entry> TimerQueue::getExpired(Timestamp now) {
@@ -182,11 +182,11 @@ void TimerQueue::reset(const std::vector<Entry> &expired, Timestamp now) {
 
     for (const Entry &it : expired) {
         ActiveTimer timer(it.second, it.second->sequence());
-        if (it.second->repeat()
+        if (it.second->repeat()     //如果是重复的定时器并且是未取消定时器，则重启该定时器
             && cancelingTimers_.find(timer) == cancelingTimers_.end()) {
             it.second->restart(now);
             insert(it.second);
-        } else {
+        } else {                    //一次性定时器或者已被取消的定时器是不能重置的，因此删除该定时器
             // FIXME move to a free list
             delete it.second; // FIXME: no delete please
         }

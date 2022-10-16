@@ -16,6 +16,7 @@
 #include "muduo/net/TimerQueue.h"
 
 #include <algorithm>
+#include <utility>
 
 #include <signal.h>
 #include <sys/eventfd.h>
@@ -130,7 +131,13 @@ void EventLoop::loop()
     }
     currentActiveChannel_ = NULL;
     eventHandling_ = false;
-    doPendingFunctors();
+    doPendingFunctors();            //让I/O线程也能执行一些计算任务
+    /**
+     * muduo没有反复执行doPendingFunctors()直到pendingFunctors_为空，
+     * 这是有意的，否则I/O线程可能陷入死循环，比如doPendingFunctors()调用
+     * 的functor()中又调用了queueInLoop()，每次执行任务时又添加了任务，导致
+     * EventLoop的一次循环永远不能结束
+     */
   }
 
   LOG_TRACE << "EventLoop " << this << " stop looping";
@@ -150,15 +157,16 @@ void EventLoop::quit()
   }
 }
 
+//在I/O线程中执行某个回调函数，该函数可以跨线程调用
 void EventLoop::runInLoop(Functor cb)
 {
   if (isInLoopThread())
   {
-    cb();
+    cb();                               //同步调用cb
   }
   else
   {
-    queueInLoop(std::move(cb));
+    queueInLoop(std::move(cb));     //异步将cb添加到队列
   }
 }
 
@@ -168,7 +176,11 @@ void EventLoop::queueInLoop(Functor cb)
   MutexLockGuard lock(mutex_);
   pendingFunctors_.push_back(std::move(cb));
   }
-
+  /**
+   * 需要 wakeup 的情形
+   * 调用该函数的线程不是当前I/O线程
+   * 调用该函数的线程是当前I/O线程并且正在调用pendingFunctors_
+   */
   if (!isInLoopThread() || callingPendingFunctors_)
   {
     wakeup();
@@ -238,7 +250,7 @@ void EventLoop::abortNotInLoopThread()
 
 void EventLoop::wakeup()
 {
-  uint64_t one = 1;
+  uint64_t one = 1;     //8bytes缓冲区
   ssize_t n = sockets::write(wakeupFd_, &one, sizeof one);
   if (n != sizeof one)
   {
@@ -264,6 +276,11 @@ void EventLoop::doPendingFunctors()
   {
   MutexLockGuard lock(mutex_);
   functors.swap(pendingFunctors_);
+  /**
+   * 用swap再对functors操作的好处
+   * 1. 减小了临界区长度
+   * 2. 避免了死锁，因为Functor可能再次调用queueInLoop()
+   */
   }
 
   for (const Functor& functor : functors)

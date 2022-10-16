@@ -65,6 +65,7 @@ namespace muduo {
 
             void addTimerInLoop(Timer *timer);
 
+            //取消一个定时器
             void cancelInLoop(TimerId timerId);
 
             // called when timerfd alarms

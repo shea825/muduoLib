@@ -141,7 +141,7 @@ private:
   int wakeupFd_;
   // unlike in TimerQueue, which is an internal class,
   // we don't expose Channel to client.
-  std::unique_ptr<Channel> wakeupChannel_;
+  std::unique_ptr<Channel> wakeupChannel_;  //该通道将会纳入poller_来管理
   boost::any context_;
 
   // scratch variables

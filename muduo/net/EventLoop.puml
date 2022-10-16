@@ -63,8 +63,8 @@ Poller <|-- EPollPoller
 Poller <|-- PollPoller
 EventLoop "1" o-- "many" Channel
 TcpConnection *-- Channel
-Channel *-- Acceptor
-Channel *-- Connector
+Acceptor *-- Channel
+Connector *-- Channel
 TcpServer *-- Acceptor
 TcpClient *-- Connector
 TcpServer "1" o-- "many" TcpConnection

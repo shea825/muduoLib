@@ -104,8 +104,7 @@ __END_DECLS
 
 #endif // CHECK_PTHREAD_RETURN_VALUE
 
-namespace muduo
-{
+namespace muduo {
 
 // Use as data member of a class, eg.
 //
@@ -118,85 +117,73 @@ namespace muduo
 //   mutable MutexLock mutex_;
 //   std::vector<int> data_ GUARDED_BY(mutex_);
 // };
-class CAPABILITY("mutex") MutexLock : noncopyable
-{
- public:
-  MutexLock()
-    : holder_(0)
-  {
-    MCHECK(pthread_mutex_init(&mutex_, NULL));
-  }
+    class CAPABILITY("mutex") MutexLock : noncopyable {
+    public:
+        MutexLock()
+                : holder_(0) {
+            MCHECK(pthread_mutex_init(&mutex_, NULL));
+        }
 
-  ~MutexLock()
-  {
-    assert(holder_ == 0);
-    MCHECK(pthread_mutex_destroy(&mutex_));
-  }
+        ~MutexLock() {
+            assert(holder_ == 0);
+            MCHECK(pthread_mutex_destroy(&mutex_));
+        }
 
-  // must be called when locked, i.e. for assertion
-  bool isLockedByThisThread() const
-  {
-    return holder_ == CurrentThread::tid();
-  }
+        // must be called when locked, i.e. for assertion
+        bool isLockedByThisThread() const {
+            return holder_ == CurrentThread::tid();
+        }
 
-  void assertLocked() const ASSERT_CAPABILITY(this)
-  {
-    assert(isLockedByThisThread());
-  }
+        void assertLocked() const ASSERT_CAPABILITY(this) {
+            assert(isLockedByThisThread());
+        }
 
-  // internal usage
+        // internal usage
 
-  void lock() ACQUIRE()
-  {
-    MCHECK(pthread_mutex_lock(&mutex_));
-    assignHolder();
-  }
+        void lock() ACQUIRE() {
+            MCHECK(pthread_mutex_lock(&mutex_));
+            assignHolder();
+        }
 
-  void unlock() RELEASE()
-  {
-    unassignHolder();
-    MCHECK(pthread_mutex_unlock(&mutex_));
-  }
+        void unlock() RELEASE() {
+            unassignHolder();
+            MCHECK(pthread_mutex_unlock(&mutex_));
+        }
 
-  pthread_mutex_t* getPthreadMutex() /* non-const */
-  {
-    return &mutex_;
-  }
+        pthread_mutex_t *getPthreadMutex() /* non-const */
+        {
+            return &mutex_;
+        }
 
- private:
-  friend class Condition;
+    private:
+        friend class Condition;
 
-  class UnassignGuard : noncopyable
-  {
-   public:
-    explicit UnassignGuard(MutexLock& owner)
-      : owner_(owner)
-    {
-      owner_.unassignHolder();
-    }
+        class UnassignGuard : noncopyable {
+        public:
+            explicit UnassignGuard(MutexLock &owner)
+                    : owner_(owner) {
+                owner_.unassignHolder();
+            }
 
-    ~UnassignGuard()
-    {
-      owner_.assignHolder();
-    }
+            ~UnassignGuard() {
+                owner_.assignHolder();
+            }
 
-   private:
-    MutexLock& owner_;
-  };
+        private:
+            MutexLock &owner_;
+        };
 
-  void unassignHolder()
-  {
-    holder_ = 0;
-  }
+        void unassignHolder() {
+            holder_ = 0;
+        }
 
-  void assignHolder()
-  {
-    holder_ = CurrentThread::tid();
-  }
+        void assignHolder() {
+            holder_ = CurrentThread::tid();
+        }
 
-  pthread_mutex_t mutex_;
-  pid_t holder_;
-};
+        pthread_mutex_t mutex_;
+        pid_t holder_;
+    };
 
 // Use as a stack variable, eg.
 // int Foo::size() const
@@ -204,30 +191,32 @@ class CAPABILITY("mutex") MutexLock : noncopyable
 //   MutexLockGuard lock(mutex_);
 //   return data_.size();
 // }
-class SCOPED_CAPABILITY MutexLockGuard : noncopyable
-{
- public:
-  explicit MutexLockGuard(MutexLock& mutex) ACQUIRE(mutex)
-    : mutex_(mutex)
-  {
-    mutex_.lock();
-  }
+    class SCOPED_CAPABILITY MutexLockGuard : noncopyable {
+    public:
+        explicit MutexLockGuard(MutexLock &mutex) ACQUIRE(mutex)
+                : mutex_(mutex) {
+            mutex_.lock();
+        }
 
-  ~MutexLockGuard() RELEASE()
-  {
-    mutex_.unlock();
-  }
+        ~MutexLockGuard() RELEASE() {
+            mutex_.unlock();
+        }
 
- private:
+    private:
 
-  MutexLock& mutex_;
-};
+        MutexLock &mutex_;
+        /**
+         * mutex生存期不归 MutexLockGuard 管理，析构时并不会释放 mutex 这个对象
+         * 两者仅是关联关系
+         */
+    };
 
 }  // namespace muduo
 
 // Prevent misuse like:
 // MutexLockGuard(mutex_);
 // A tempory object doesn't hold the lock for long!
+// 不允许匿名构造一个 MutexLockGuard 对象
 #define MutexLockGuard(x) error "Missing guard object name"
 
 #endif  // MUDUO_BASE_MUTEX_H
